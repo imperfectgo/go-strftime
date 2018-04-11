@@ -11,7 +11,7 @@ import (
 
 const (
 	_                      = iota
-	stdYield                                              // Yielded chunk
+	stdNop                                                // Yielded chunk
 	stdLongMonth           = iota + stdNeedDate           // "January"
 	stdMonth                                              // "Jan"
 	stdNumMonth                                           // "1"
@@ -20,6 +20,8 @@ const (
 	stdZeroBasedNumWeekDay                                // numerical week representation (0 - Sunday ~ 6 - Saturday)
 	stdNumWeekDay                                         // numerical week representation (1 - Monday ~ 7- Sunday)
 	stdWeekDay                                            // "Mon"
+	stdWeekOfYear                                         // week of the year (Sunday first)
+	stdMonFirstWeekOfYear                                 // week of the year (Monday first)
 	stdDay                                                // "2"
 	stdUnderDay                                           // "_2"
 	stdZeroDay                                            // "02"
@@ -33,7 +35,7 @@ const (
 	stdLongYear            = iota + stdNeedDate           // "2006"
 	stdYear                                               // "06"
 	stdFirstTwoDigitYear                                  // "20"
-	stdYearDay                                            // day of the year as a decimal number (range [001,366])
+	stdYearDay                                            // day of the year (range [001,366])
 	stdISO8601WeekYear     = iota + stdNeedISOISO8601Week // last two digits of ISO 8601 week-based year
 	stdISO8601LongWeekYear                                // ISO 8601 week-based year
 	stdISO8601Week                                        // ISO 8601 week
@@ -104,7 +106,7 @@ func AppendFormat(b []byte, t time.Time, layout string) []byte {
 		}
 
 		switch std & stdMask {
-		case stdYield:
+		case stdNop:
 			continue
 		case stdISO8601WeekYear:
 			b = appendInt(b, iso8601WeekYear%100, 2)
@@ -129,8 +131,8 @@ func AppendFormat(b []byte, t time.Time, layout string) []byte {
 		case stdLongMonth:
 			m := month.String()
 			b = append(b, m...)
-		case stdNumMonth:
-			b = appendInt(b, int(month), 0)
+		//case stdNumMonth:
+		//	b = appendInt(b, int(month), 0)
 		case stdZeroMonth:
 			b = appendInt(b, int(month), 2)
 		case stdWeekDay:
@@ -147,6 +149,14 @@ func AppendFormat(b []byte, t time.Time, layout string) []byte {
 				w = 7
 			}
 			b = appendInt(b, w, 0)
+		case stdWeekOfYear, stdMonFirstWeekOfYear:
+			w := int(absWeekday(abs))
+			n := w - (std - stdWeekOfYear)
+			if n < 0 {
+				n = 7
+			}
+			n = ((yday - n) / 7) + 1
+			b = appendInt(b, n, 2)
 		case stdDay:
 			b = appendInt(b, day, 0)
 		case stdUnderDay:
@@ -158,13 +168,13 @@ func AppendFormat(b []byte, t time.Time, layout string) []byte {
 			b = appendInt(b, day, 2)
 		case stdHour:
 			b = appendInt(b, hour, 2)
-		case stdHour12:
-			// Noon is 12PM, midnight is 12AM.
-			hr := hour % 12
-			if hr == 0 {
-				hr = 12
-			}
-			b = appendInt(b, hr, 0)
+		//case stdHour12:
+		//	// Noon is 12PM, midnight is 12AM.
+		//	hr := hour % 12
+		//	if hr == 0 {
+		//		hr = 12
+		//	}
+		//	b = appendInt(b, hr, 0)
 		case stdZeroHour12:
 			// Noon is 12PM, midnight is 12AM.
 			hr := hour % 12
@@ -172,12 +182,12 @@ func AppendFormat(b []byte, t time.Time, layout string) []byte {
 				hr = 12
 			}
 			b = appendInt(b, hr, 2)
-		case stdMinute:
-			b = appendInt(b, min, 0)
+		//case stdMinute:
+		//	b = appendInt(b, min, 0)
 		case stdZeroMinute:
 			b = appendInt(b, min, 2)
-		case stdSecond:
-			b = appendInt(b, sec, 0)
+		//case stdSecond:
+		//	b = appendInt(b, sec, 0)
 		case stdZeroSecond:
 			b = appendInt(b, sec, 2)
 		case stdPM:
@@ -208,17 +218,6 @@ func AppendFormat(b []byte, t time.Time, layout string) []byte {
 				b = append(b, name...)
 				break
 			}
-			// No time zone known for this time, but we must print one.
-			// Use the -0700 laylout.
-			zone := offset / 60 // convert to minutes
-			if zone < 0 {
-				b = append(b, '-')
-				zone = -zone
-			} else {
-				b = append(b, '+')
-			}
-			b = appendInt(b, zone/60, 2)
-			b = appendInt(b, zone%60, 2)
 		case stdFracSecond0, stdFracSecond9:
 			b = formatNano(b, uint(t.Nanosecond()), std>>stdArgShift, std&stdMask == stdFracSecond9)
 		}
@@ -250,13 +249,13 @@ func nextStdChunk(layout string) (prefix string, std int, suffix string) {
 		case 'B': // January
 			return layout[0:specPos], stdLongMonth, layout[i+1:]
 		case 'c': // "Mon Jan _2 15:04:05 2006" (assumes "C" locale)
-			return layout[0:specPos], stdYield, "%a %b %e %H:%M:%S %Y" + layout[i+1:]
+			return layout[0:specPos], stdNop, "%a %b %e %H:%M:%S %Y" + layout[i+1:]
 		case 'C': // 20
 			return layout[0:specPos], stdFirstTwoDigitYear, layout[i+1:]
 		case 'd': // 02
 			return layout[0:specPos], stdZeroDay, layout[i+1:]
 		case 'D': // %m/%d/%y
-			return layout[0:specPos], stdYield, "%m/%d/%y" + layout[i+1:]
+			return layout[0:specPos], stdNop, "%m/%d/%y" + layout[i+1:]
 		case 'e': // _2
 			return layout[0:specPos], stdUnderDay, layout[i+1:]
 		case 'f': // fraction seconds in microseconds (Python)
@@ -264,7 +263,7 @@ func nextStdChunk(layout string) (prefix string, std int, suffix string) {
 			std |= 6 << stdArgShift // microseconds precision
 			return layout[0:specPos], std, layout[i+1:]
 		case 'F': // %Y-%m-%d
-			return layout[0:specPos], stdYield, "%Y-%m-%d" + layout[i+1:]
+			return layout[0:specPos], stdNop, "%Y-%m-%d" + layout[i+1:]
 		case 'g':
 			return layout[0:specPos], stdISO8601WeekYear, layout[i+1:]
 		case 'G':
@@ -280,35 +279,35 @@ func nextStdChunk(layout string) (prefix string, std int, suffix string) {
 		case 'M':
 			return layout[0:specPos], stdZeroMinute, layout[i+1:]
 		case 'n':
-			return layout[0:specPos] + "\n", stdYield, layout[i+1:]
+			return layout[0:specPos] + "\n", stdNop, layout[i+1:]
 		case 'p':
 			return layout[0:specPos], stdPM, layout[i+1:]
 		case 'P':
 			return layout[0:specPos], stdpm, layout[i+1:]
 		case 'r':
-			return layout[0:specPos], stdYield, "%I:%M:%S %p" + layout[i+1:]
+			return layout[0:specPos], stdNop, "%I:%M:%S %p" + layout[i+1:]
 		case 'R': // %H:%M"
-			return layout[0:specPos], stdYield, "%H:%M" + layout[i+1:]
+			return layout[0:specPos], stdNop, "%H:%M" + layout[i+1:]
 		case 'S':
 			return layout[0:specPos], stdZeroSecond, layout[i+1:]
 		case 't':
-			return layout[0:specPos] + "\t", stdYield, layout[i+1:]
+			return layout[0:specPos] + "\t", stdNop, layout[i+1:]
 		case 'T': // %H:%M:%S
-			return layout[0:specPos], stdYield, "%H:%M:%S" + layout[i+1:]
+			return layout[0:specPos], stdNop, "%H:%M:%S" + layout[i+1:]
 		case 'u': // weekday as a decimal number, where Monday is 1
 			return layout[0:specPos], stdNumWeekDay, layout[i+1:]
-		case 'U':
-			// TODO week of the year as a decimal number (Sunday is the first day of the week)
+		case 'U': // week of the year as a decimal number (Sunday is the first day of the week)
+			return layout[0:specPos], stdWeekOfYear, layout[i+1:]
 		case 'V':
 			return layout[0:specPos], stdISO8601Week, layout[i+1:]
 		case 'w':
 			return layout[0:specPos], stdZeroBasedNumWeekDay, layout[i+1:]
-		case 'W':
-			// TODO: week of the year as a decimal number (Monday is the first day of the week)
+		case 'W': // week of the year as a decimal number (Monday is the first day of the week)
+			return layout[0:specPos], stdMonFirstWeekOfYear, layout[i+1:]
 		case 'x': // locale depended date representation (assumes "C" locale)
-			return layout[0:specPos], stdYield, "%m/%d/%Y" + layout[i+1:]
+			return layout[0:specPos], stdNop, "%m/%d/%Y" + layout[i+1:]
 		case 'X': // locale depended time representation (assumes "C" locale)
-			return layout[0:specPos], stdYield, "%H:%M:%S" + layout[i+1:]
+			return layout[0:specPos], stdNop, "%H:%M:%S" + layout[i+1:]
 		case 'y':
 			return layout[0:specPos], stdYear, layout[i+1:]
 		case 'Y':
@@ -318,7 +317,7 @@ func nextStdChunk(layout string) (prefix string, std int, suffix string) {
 		case 'Z':
 			return layout[0:specPos], stdTZ, layout[i+1:]
 		case '%':
-			return layout[0:specPos] + "%", stdYield, layout[i+1:]
+			return layout[0:specPos] + "%", stdNop, layout[i+1:]
 		}
 
 		specPos = -1

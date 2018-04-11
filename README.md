@@ -7,7 +7,9 @@
 
 High performance C99-compatible `strftime` formatter for Go.
 
-**EXPERIMENTAL** Please DO NOT USE for now.
+## Caveats
+
+**EXPERIMENTAL** Please test before use.
 
 ## Performance
 
@@ -27,4 +29,5 @@ ok      github.com/imperfectgo/go-strftime      4.245s
 
 ## License
 
-See [License](./LICENSE) file.
+This project can be treated as a derived work of time package from golang standard library.
+Licensed under the Modified (3-clause) BSD license.

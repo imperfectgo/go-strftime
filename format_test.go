@@ -13,7 +13,7 @@
 //
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// FITNESS FOR A PARTICULAR PURPOSE AND NON INFRINGEMENT. IN NO EVENT SHALL THE
 // AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
@@ -22,7 +22,6 @@
 package strftime
 
 import (
-	"fmt"
 	"testing"
 	"time"
 )
@@ -35,64 +34,65 @@ var (
 
 	tc = []struct {
 		time     time.Time
-		laylout  string
+		layout   string
 		expected string
 	}{
-		{time: t1, laylout: "%", expected: "%"},
-		{time: t1, laylout: "%%", expected: "%"},
-		{time: t1, laylout: "%Q", expected: "%Q"},
-		{time: t1, laylout: "%%n", expected: "%n"},
-		{time: t1, laylout: "%%t", expected: "%t"},
-		{time: t1, laylout: "%n%t", expected: "\n\t"},
-		{time: t1, laylout: "%a", expected: "Mon"},
-		{time: t1, laylout: "%A", expected: "Monday"},
-		{time: t1, laylout: "%b", expected: "Jul"},
-		{time: t1, laylout: "%h", expected: "Jul"},
-		{time: t1, laylout: "%B", expected: "July"},
-		{time: t1, laylout: "%c", expected: "Mon Jul  9 13:14:15 2018"},
-		{time: t1, laylout: "%C", expected: "20"},
-		{time: t1, laylout: "%d", expected: "09"},
-		{time: t1, laylout: "%D", expected: "07/09/18"},
-		{time: t1, laylout: "%e", expected: " 9"},
-		{time: t1, laylout: "%F", expected: "2018-07-09"},
-		{time: t1, laylout: "%g", expected: "18"},
-		{time: t1, laylout: "%G", expected: "2018"},
-		{time: t1, laylout: "%H", expected: "13"},
-		{time: t1, laylout: "%I", expected: "01"},
-		{time: t1, laylout: "%j", expected: "190"},
-		{time: t1, laylout: "%m", expected: "07"},
-		{time: t1, laylout: "%M", expected: "14"},
-		{time: t1, laylout: "%n", expected: "\n"},
-		{time: t1, laylout: "%p", expected: "PM"},
-		{time: t2, laylout: "%p", expected: "AM"},
-		{time: t1, laylout: "%P", expected: "pm"},
-		{time: t2, laylout: "%P", expected: "am"},
-		{time: t1, laylout: "%r", expected: "01:14:15 PM"},
-		{time: t2, laylout: "%r", expected: "04:45:59 AM"},
-		{time: t1, laylout: "%R", expected: "13:14"},
-		{time: t2, laylout: "%R", expected: "04:45"},
-		{time: t1, laylout: "%S", expected: "15"},
-		{time: t1, laylout: "%t", expected: "\t"},
-		{time: t1, laylout: "%T", expected: "13:14:15"},
-		{time: t2, laylout: "%T", expected: "04:45:59"},
-		{time: t1, laylout: "%u", expected: "1"},
-		{time: t2, laylout: "%u", expected: "7"},
-		{time: t1, laylout: "%V", expected: "28"},
-		{time: t3, laylout: "%V", expected: "53"}, // 3 January days in this week.
-		{time: t4, laylout: "%V", expected: "01"}, // 4 January days in this week.
-		{time: t1, laylout: "%w", expected: "1"},
-		{time: t2, laylout: "%w", expected: "0"},
-		{time: t1, laylout: "%x", expected: "07/09/2018"},
-		{time: t1, laylout: "%X", expected: "13:14:15"},
-		{time: t2, laylout: "%X", expected: "04:45:59"},
-		{time: t1, laylout: "%y", expected: "18"},
-		{time: t1, laylout: "%Y", expected: "2018"},
-		{time: t1, laylout: "%z", expected: "+0000"},
-		{time: t1, laylout: "%Z", expected: "UTC"},
-		{time: t1, laylout: "foo", expected: "foo"},
-		{time: t1, laylout: "bar%", expected: "bar%"},
-		{time: t1, laylout: "%1", expected: "%1"},
-		{time: t1, laylout: "%Y-%m-%dtest\n\t%Z", expected: "2018-07-09test\n\tUTC"},
+		{time: t1, layout: "%", expected: "%"},
+		{time: t1, layout: "%%", expected: "%"},
+		{time: t1, layout: "%Q", expected: "%Q"},
+		{time: t1, layout: "%%n", expected: "%n"},
+		{time: t1, layout: "%%t", expected: "%t"},
+		{time: t1, layout: "%n%t", expected: "\n\t"},
+		{time: t1, layout: "%a", expected: "Mon"},
+		{time: t1, layout: "%A", expected: "Monday"},
+		{time: t1, layout: "%b", expected: "Jul"},
+		{time: t1, layout: "%h", expected: "Jul"},
+		{time: t1, layout: "%B", expected: "July"},
+		{time: t1, layout: "%c", expected: "Mon Jul  9 13:14:15 2018"},
+		{time: t1, layout: "%C", expected: "20"},
+		{time: t1, layout: "%d", expected: "09"},
+		{time: t1, layout: "%D", expected: "07/09/18"},
+		{time: t1, layout: "%e", expected: " 9"},
+		{time: t1, layout: "%F", expected: "2018-07-09"},
+		{time: t1, layout: "%g", expected: "18"},
+		{time: t1, layout: "%G", expected: "2018"},
+		{time: t1, layout: "%H", expected: "13"},
+		{time: t1, layout: "%I", expected: "01"},
+		{time: t1, layout: "%j", expected: "190"},
+		{time: t1, layout: "%m", expected: "07"},
+		{time: t1, layout: "%M", expected: "14"},
+		{time: t1, layout: "%n", expected: "\n"},
+		{time: t1, layout: "%p", expected: "PM"},
+		{time: t2, layout: "%p", expected: "AM"},
+		{time: t1, layout: "%P", expected: "pm"},
+		{time: t2, layout: "%P", expected: "am"},
+		{time: t1, layout: "%r", expected: "01:14:15 PM"},
+		{time: t2, layout: "%r", expected: "04:45:59 AM"},
+		{time: t1, layout: "%R", expected: "13:14"},
+		{time: t2, layout: "%R", expected: "04:45"},
+		{time: t1, layout: "%S", expected: "15"},
+		{time: t1, layout: "%t", expected: "\t"},
+		{time: t1, layout: "%T", expected: "13:14:15"},
+		{time: t2, layout: "%T", expected: "04:45:59"},
+		{time: t1, layout: "%u", expected: "1"},
+		{time: t2, layout: "%u", expected: "7"},
+		{time: t1, layout: "%V", expected: "28"},
+		{time: t3, layout: "%V", expected: "53"}, // 3 January days in this week.
+		{time: t4, layout: "%V", expected: "01"}, // 4 January days in this week.
+		{time: t1, layout: "%w", expected: "1"},
+		{time: t2, layout: "%w", expected: "0"},
+		{time: t1, layout: "%x", expected: "07/09/2018"},
+		{time: t1, layout: "%X", expected: "13:14:15"},
+		{time: t2, layout: "%X", expected: "04:45:59"},
+		{time: t1, layout: "%y", expected: "18"},
+		{time: t1, layout: "%Y", expected: "2018"},
+		{time: t1, layout: "%z", expected: "+0000"},
+		{time: t1, layout: "%Z", expected: "UTC"},
+		{time: t1, layout: "foo", expected: "foo"},
+		{time: t1, layout: "bar%", expected: "bar%"},
+		{time: t1, layout: "%1", expected: "%1"},
+		{time: t1, layout: "%U %W", expected: "27 28"},
+		{time: t1, layout: "%Y-%m-%dtest\n\t%Z", expected: "2018-07-09test\n\tUTC"},
 	}
 )
 
@@ -100,11 +100,9 @@ func TestFormat(t *testing.T) {
 
 	for i := range tc {
 		c := tc[i]
-		t.Run(fmt.Sprintf("layout: %s", c.laylout), func(t *testing.T) {
-			actual := Format(c.time, c.laylout)
-			if actual != c.expected {
-				t.Errorf("expected: %q; actual: %q", c.expected, actual)
-			}
-		})
+		actual := Format(c.time, c.layout)
+		if actual != c.expected {
+			t.Errorf("Test layout `%s`: expected: %q; actual: %q", c.layout, c.expected, actual)
+		}
 	}
 }
