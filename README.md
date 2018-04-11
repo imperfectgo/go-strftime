@@ -16,7 +16,7 @@ High performance C99-compatible `strftime` formatter for Go.
 Comparision with the standard library `time.(*Time).Format()`:
 
 ```
-> go test -bench Bench -cpu 4 -benchmem .
+> go test -tags bench -bench Bench -cpu 4 -benchmem .
 
 goos: darwin
 goarch: amd64
@@ -30,7 +30,7 @@ ok      github.com/imperfectgo/go-strftime      4.245s
 Comparision with other libraries:
 
 ```
-> go test -bench Bench -cpu 8 -benchmem ./benchmark
+> go test -tags benchcomp -bench Bench -cpu 8 -benchmem .
 
 goos: darwin
 goarch: amd64
@@ -48,4 +48,5 @@ ok      github.com/imperfectgo/go-strftime/benchmark    10.605s
 ## License
 
 This project can be treated as a derived work of time package from golang standard library.
+
 Licensed under the Modified (3-clause) BSD license.

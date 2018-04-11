@@ -1,6 +1,6 @@
 // Copyright 2018 Timon Wong. All rights reserved.
 
-// +build bench
+// +build benchcomp
 
 package strftime_test
 
