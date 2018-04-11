@@ -157,8 +157,8 @@ func AppendFormat(b []byte, t time.Time, layout string) []byte {
 			}
 			n = ((yday - n) / 7) + 1
 			b = appendInt(b, n, 2)
-		case stdDay:
-			b = appendInt(b, day, 0)
+		//case stdDay:
+		//	b = appendInt(b, day, 0)
 		case stdUnderDay:
 			if day < 10 {
 				b = append(b, ' ')

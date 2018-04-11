@@ -19,11 +19,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-package strftime
+package strftime_test
 
 import (
 	"testing"
 	"time"
+
+	"github.com/imperfectgo/go-strftime"
 )
 
 var (
@@ -100,7 +102,7 @@ func TestFormat(t *testing.T) {
 
 	for i := range tc {
 		c := tc[i]
-		actual := Format(c.time, c.layout)
+		actual := strftime.Format(c.time, c.layout)
 		if actual != c.expected {
 			t.Errorf("Test layout `%s`: expected: %q; actual: %q", c.layout, c.expected, actual)
 		}
