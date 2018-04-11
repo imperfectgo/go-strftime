@@ -49,6 +49,8 @@ const (
 	stdMask                = 1<<stdArgShift - 1           // mask out argument
 )
 
+// Format returns a textual representation of the time value formatted
+// according to C99-compatible strftime layout.
 func Format(t time.Time, layout string) string {
 	const bufSize = 64
 	var b [bufSize]byte
@@ -57,6 +59,8 @@ func Format(t time.Time, layout string) string {
 	return string(buf)
 }
 
+// AppendFormat is like Format but appends the textual
+// representation to b and returns the extended buffer.
 func AppendFormat(b []byte, t time.Time, layout string) []byte {
 	var (
 		name, offset, abs = locabs(&t)

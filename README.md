@@ -1,5 +1,10 @@
 # go-strftime
 
+[![GoDoc](https://godoc.org/github.com/imperfectgo/go-strftime?status.svg)](https://godoc.org/github.com/imperfectgo/go-strftime) 
+[![Build Status](https://travis-ci.org/imperfectgo/go-strftime.svg?branch=master)](https://travis-ci.org/imperfectgo/go-strftime)
+[![Go Report Card](https://goreportcard.com/badge/github.com/imperfectgo/go-strftime)](https://goreportcard.com/report/github.com/imperfectgo/go-strftime)
+[![Coverage](https://codecov.io/gh/imperfectgo/go-strftime/branch/master/graph/badge.svg)](https://codecov.io/gh/imperfectgo/go-strftime)
+
 High performance C99-compatible `strftime` formatter for Go.
 
 **EXPERIMENTAL** Please DO NOT USE for now.
