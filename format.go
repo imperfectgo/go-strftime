@@ -17,7 +17,8 @@ const (
 	stdNumMonth                                           // "1"
 	stdZeroMonth                                          // "01"
 	stdLongWeekDay                                        // "Monday"
-	stdNumWeekDay                                         // numerical week representation (0 - Sunday ~ 6 - Saturday)
+	stdZeroBasedNumWeekDay                                // numerical week representation (0 - Sunday ~ 6 - Saturday)
+	stdNumWeekDay                                         // numerical week representation (1 - Monday ~ 7- Sunday)
 	stdWeekDay                                            // "Mon"
 	stdDay                                                // "2"
 	stdUnderDay                                           // "_2"
@@ -137,8 +138,14 @@ func AppendFormat(b []byte, t time.Time, layout string) []byte {
 		case stdLongWeekDay:
 			s := absWeekday(abs).String()
 			b = append(b, s...)
+		case stdZeroBasedNumWeekDay:
+			w := int(absWeekday(abs))
+			b = appendInt(b, w, 0)
 		case stdNumWeekDay:
 			w := int(absWeekday(abs))
+			if w == 0 {
+				w = 7
+			}
 			b = appendInt(b, w, 0)
 		case stdDay:
 			b = appendInt(b, day, 0)
@@ -242,7 +249,7 @@ func nextStdChunk(layout string) (prefix string, std int, suffix string) {
 			return layout[0:specPos], stdMonth, layout[i+1:]
 		case 'B': // January
 			return layout[0:specPos], stdLongMonth, layout[i+1:]
-		case 'c': // "Mon Jan _2 15:04:05 2006"
+		case 'c': // "Mon Jan _2 15:04:05 2006" (assumes "C" locale)
 			return layout[0:specPos], stdYield, "%a %b %e %H:%M:%S %Y" + layout[i+1:]
 		case 'C': // 20
 			return layout[0:specPos], stdFirstTwoDigitYear, layout[i+1:]
@@ -287,18 +294,20 @@ func nextStdChunk(layout string) (prefix string, std int, suffix string) {
 			return layout[0:specPos] + "\t", stdYield, layout[i+1:]
 		case 'T': // %H:%M:%S
 			return layout[0:specPos], stdYield, "%H:%M:%S" + layout[i+1:]
-		//case 'u': // TODO ISO8601 weekday
-		//return layout[0:specPos], stdNumWeekDay, layout[i+1:]
+		case 'u': // weekday as a decimal number, where Monday is 1
+			return layout[0:specPos], stdNumWeekDay, layout[i+1:]
 		case 'U':
 			// TODO week of the year as a decimal number (Sunday is the first day of the week)
 		case 'V':
 			return layout[0:specPos], stdISO8601Week, layout[i+1:]
 		case 'w':
-			return layout[0:specPos], stdNumWeekDay, layout[i+1:]
+			return layout[0:specPos], stdZeroBasedNumWeekDay, layout[i+1:]
 		case 'W':
 			// TODO: week of the year as a decimal number (Monday is the first day of the week)
-		//case 'x': // locale depended, not supported
-		//case 'X': // locale depended, not supported
+		case 'x': // locale depended date representation (assumes "C" locale)
+			return layout[0:specPos], stdYield, "%m/%d/%y" + layout[i+1:]
+		case 'X': // locale depended time representation (assumes "C" locale)
+			return layout[0:specPos], stdYield, "%H:%M:%S" + layout[i+1:]
 		case 'y':
 			return layout[0:specPos], stdYear, layout[i+1:]
 		case 'Y':
