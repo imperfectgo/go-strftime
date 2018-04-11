@@ -11,6 +11,7 @@ import (
 
 const (
 	_                      = iota
+	stdYield                                              // Yielded chunk
 	stdLongMonth           = iota + stdNeedDate           // "January"
 	stdMonth                                              // "Jan"
 	stdNumMonth                                           // "1"
@@ -96,6 +97,8 @@ func AppendFormat(b []byte, t time.Time, layout string) []byte {
 		}
 
 		switch std & stdMask {
+		case stdYield:
+			continue
 		case stdISO8601WeekYear:
 			b = appendInt(b, iso8601WeekYear/100, 2)
 		case stdISO8601LongWeekYear:
@@ -176,11 +179,9 @@ func AppendFormat(b []byte, t time.Time, layout string) []byte {
 			}
 		case stdNumTZ:
 			zone := offset / 60 // convert to minutes
-			absoffset := offset
 			if zone < 0 {
 				b = append(b, '-')
 				zone = -zone
-				absoffset = -absoffset
 			} else {
 				b = append(b, '+')
 			}
@@ -207,7 +208,6 @@ func AppendFormat(b []byte, t time.Time, layout string) []byte {
 			b = formatNano(b, uint(t.Nanosecond()), std>>stdArgShift, std&stdMask == stdFracSecond9)
 		}
 	}
-	return b
 	return b
 }
 
@@ -237,7 +237,7 @@ func nextStdChunk(layout string) (prefix string, std int, suffix string) {
 		case 'B': // January
 			return layout[0:specPos], stdLongMonth, layout[i+1:]
 		case 'c': // "Mon Jan _2 15:04:05 2006"
-			return layout[0:specPos], stdMonth, " %e %H:%M:%S %Y" + layout[i+1:]
+			return layout[0:specPos], stdYield, "%a %b %e %H:%M:%S %Y" + layout[i+1:]
 		case 'C': // 20
 			return layout[0:specPos], stdFirstTwoDigitYear, layout[i+1:]
 		case 'd': // 02
@@ -267,22 +267,22 @@ func nextStdChunk(layout string) (prefix string, std int, suffix string) {
 		case 'M':
 			return layout[0:specPos], stdZeroMinute, layout[i+1:]
 		case 'n':
-			// TODO: newline character '\n'
+			return layout[0:specPos] + "\n", stdYield, layout[i+1:]
 		case 'p':
 			return layout[0:specPos], stdPM, layout[i+1:]
 		case 'P':
 			return layout[0:specPos], stdpm, layout[i+1:]
 		case 'r':
 		case 'R': // %H:%M"
-			return layout[0:specPos], stdHour, ":%M" + layout[i+1:]
+			return layout[0:specPos], stdYield, "%H:%M" + layout[i+1:]
 		case 'S':
 			return layout[0:specPos], stdZeroSecond, layout[i+1:]
 		case 't':
-			// TODO: tab character '\t'
+			return layout[0:specPos] + "\t", stdYield, layout[i+1:]
 		case 'T': // %H:%M:%S
-			return layout[0:specPos], stdHour, ":%M:%S" + layout[i+1:]
-		case 'u': // TODO ISO8601 weekday
-			//return layout[0:specPos], stdNumWeekDay, layout[i+1:]
+			return layout[0:specPos], stdYield, "%H:%M:%S" + layout[i+1:]
+		//case 'u': // TODO ISO8601 weekday
+		//return layout[0:specPos], stdNumWeekDay, layout[i+1:]
 		case 'U':
 			// TODO week of the year as a decimal number (Sunday is the first day of the week)
 		case 'V':
@@ -291,8 +291,8 @@ func nextStdChunk(layout string) (prefix string, std int, suffix string) {
 			return layout[0:specPos], stdNumWeekDay, layout[i+1:]
 		case 'W':
 			// TODO: week of the year as a decimal number (Monday is the first day of the wee)
-		//case 'x': // localized, not supported
-		//case 'X': // localized, not supported
+		//case 'x': // locale depended, not supported
+		//case 'X': // locale depended, not supported
 		case 'y':
 			return layout[0:specPos], stdYear, layout[i+1:]
 		case 'Y':
