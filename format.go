@@ -107,7 +107,7 @@ func AppendFormat(b []byte, t time.Time, layout string) []byte {
 		case stdYield:
 			continue
 		case stdISO8601WeekYear:
-			b = appendInt(b, iso8601WeekYear/100, 2)
+			b = appendInt(b, iso8601WeekYear%100, 2)
 		case stdISO8601LongWeekYear:
 			b = appendInt(b, iso8601WeekYear, 4)
 		case stdISO8601Week:
@@ -123,7 +123,7 @@ func AppendFormat(b []byte, t time.Time, layout string) []byte {
 		case stdFirstTwoDigitYear:
 			b = appendInt(b, year/100, 2)
 		case stdYearDay:
-			b = appendInt(b, yday, 3)
+			b = appendInt(b, yday+1, 3)
 		case stdMonth:
 			b = append(b, month.String()[:3]...)
 		case stdLongMonth:
@@ -209,7 +209,7 @@ func AppendFormat(b []byte, t time.Time, layout string) []byte {
 				break
 			}
 			// No time zone known for this time, but we must print one.
-			// Use the -0700 format.
+			// Use the -0700 laylout.
 			zone := offset / 60 // convert to minutes
 			if zone < 0 {
 				b = append(b, '-')
@@ -286,6 +286,7 @@ func nextStdChunk(layout string) (prefix string, std int, suffix string) {
 		case 'P':
 			return layout[0:specPos], stdpm, layout[i+1:]
 		case 'r':
+			return layout[0:specPos], stdYield, "%I:%M:%S %p" + layout[i+1:]
 		case 'R': // %H:%M"
 			return layout[0:specPos], stdYield, "%H:%M" + layout[i+1:]
 		case 'S':
@@ -305,7 +306,7 @@ func nextStdChunk(layout string) (prefix string, std int, suffix string) {
 		case 'W':
 			// TODO: week of the year as a decimal number (Monday is the first day of the week)
 		case 'x': // locale depended date representation (assumes "C" locale)
-			return layout[0:specPos], stdYield, "%m/%d/%y" + layout[i+1:]
+			return layout[0:specPos], stdYield, "%m/%d/%Y" + layout[i+1:]
 		case 'X': // locale depended time representation (assumes "C" locale)
 			return layout[0:specPos], stdYield, "%H:%M:%S" + layout[i+1:]
 		case 'y':
@@ -317,6 +318,7 @@ func nextStdChunk(layout string) (prefix string, std int, suffix string) {
 		case 'Z':
 			return layout[0:specPos], stdTZ, layout[i+1:]
 		case '%':
+			return layout[0:specPos] + "%", stdYield, layout[i+1:]
 		}
 
 		specPos = -1
