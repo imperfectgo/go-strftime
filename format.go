@@ -32,7 +32,8 @@ const (
 	stdLongYear            = iota + stdNeedDate           // "2006"
 	stdYear                                               // "06"
 	stdFirstTwoDigitYear                                  // "20"
-	stdISO8601WeekYear     = iota + stdNeedISOISO8601Week // last two digitsof ISO 8601 week-based year
+	stdYearDay                                            // day of the year as a decimal number (range [001,366])
+	stdISO8601WeekYear     = iota + stdNeedISOISO8601Week // last two digits of ISO 8601 week-based year
 	stdISO8601LongWeekYear                                // ISO 8601 week-based year
 	stdISO8601Week                                        // ISO 8601 week
 	stdPM                  = iota + stdNeedClock          // "PM"
@@ -60,13 +61,14 @@ func AppendFormat(b []byte, t time.Time, layout string) []byte {
 	var (
 		name, offset, abs = locabs(&t)
 
-		year            int = -1
+		year            = -1
 		month           time.Month
 		day             int
-		hour            int = -1
+		yday            int
+		hour            = -1
 		min             int
 		sec             int
-		iso8601WeekYear int = -1
+		iso8601WeekYear = -1
 		iso8601Week     int
 	)
 
@@ -83,7 +85,7 @@ func AppendFormat(b []byte, t time.Time, layout string) []byte {
 
 		// Compute year, month, day if needed.
 		if year < 0 && std&stdNeedDate != 0 {
-			year, month, day, _ = absDate(abs, true)
+			year, month, day, yday = absDate(abs, true)
 		}
 
 		// Compute hour, minute, second if needed.
@@ -115,6 +117,8 @@ func AppendFormat(b []byte, t time.Time, layout string) []byte {
 			b = appendInt(b, year, 4)
 		case stdFirstTwoDigitYear:
 			b = appendInt(b, year/100, 2)
+		case stdYearDay:
+			b = appendInt(b, yday, 3)
 		case stdMonth:
 			b = append(b, month.String()[:3]...)
 		case stdLongMonth:
@@ -214,9 +218,7 @@ func AppendFormat(b []byte, t time.Time, layout string) []byte {
 // nextStdChunk finds the first occurrence of a std string in
 // layout and returns the text before, the std string, and the text after.
 func nextStdChunk(layout string) (prefix string, std int, suffix string) {
-	var (
-		specPos int = -1
-	)
+	specPos := -1
 
 	for i := 0; i < len(layout); i++ {
 		c := int(layout[i])
@@ -243,7 +245,7 @@ func nextStdChunk(layout string) (prefix string, std int, suffix string) {
 		case 'd': // 02
 			return layout[0:specPos], stdZeroDay, layout[i+1:]
 		case 'D': // %m/%d/%y
-			return layout[0:specPos], stdZeroMonth, "/%d/%y" + layout[i+1:]
+			return layout[0:specPos], stdYield, "%m/%d/%y" + layout[i+1:]
 		case 'e': // _2
 			return layout[0:specPos], stdUnderDay, layout[i+1:]
 		case 'f': // fraction seconds in microseconds (Python)
@@ -251,7 +253,7 @@ func nextStdChunk(layout string) (prefix string, std int, suffix string) {
 			std |= 6 << stdArgShift // microseconds precision
 			return layout[0:specPos], std, layout[i+1:]
 		case 'F': // %Y-%m-%d
-			return layout[0:specPos], stdLongYear, "-%m-%d" + layout[i+1:]
+			return layout[0:specPos], stdYield, "%Y-%m-%d" + layout[i+1:]
 		case 'g':
 			return layout[0:specPos], stdISO8601WeekYear, layout[i+1:]
 		case 'G':
@@ -261,7 +263,7 @@ func nextStdChunk(layout string) (prefix string, std int, suffix string) {
 		case 'I':
 			return layout[0:specPos], stdZeroHour12, layout[i+1:]
 		case 'j':
-			// TODO: day of the year as a decimal number (range [001,366])
+			return layout[0:specPos], stdYearDay, layout[i+1:]
 		case 'm':
 			return layout[0:specPos], stdZeroMonth, layout[i+1:]
 		case 'M':
@@ -290,7 +292,7 @@ func nextStdChunk(layout string) (prefix string, std int, suffix string) {
 		case 'w':
 			return layout[0:specPos], stdNumWeekDay, layout[i+1:]
 		case 'W':
-			// TODO: week of the year as a decimal number (Monday is the first day of the wee)
+			// TODO: week of the year as a decimal number (Monday is the first day of the week)
 		//case 'x': // locale depended, not supported
 		//case 'X': // locale depended, not supported
 		case 'y':
