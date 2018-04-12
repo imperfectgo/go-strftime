@@ -54,11 +54,50 @@ const (
 
 // Format returns a textual representation of the time value formatted
 // according to C99-compatible strftime layout.
+//
+// List of accepted specifiers:
+//  %a  abbreviated weekday name (Sun)
+//  %A  full weekday name (Sunday)
+//  %b  abbreviated month name (Sep)
+//  %B  full month name (September)
+//  %c  the same as time.ANSIC (%a %b %e %H:%M:%S %)
+//  %C  (year / 100) as number. Single digits are preceded by zero (20)
+//  %d  day of month as number. Single digits are preceded by zero (21)
+//  %D  equivalent to %m/%d/%y (09/21/14)
+//  %e  day of month as number. Single digits are preceded by a blank (21)
+//  %f  microsecond as a six digit decimal number, zero-padded on the left (001234)
+//  %F  equivalent to %Y-%m-%d (2014-09-21)
+//  %g  last two digits of ISO 8601 week-based year
+//  %G  ISO 8601 week-based year
+//  %h  same as %b
+//  %H  the hour (24 hour clock) as a number. Single digits are preceded by zero (15)
+//  %I  the hour (12 hour clock) as a number. Single digits are preceded by zero (03)
+//  %j  the day of the year as a decimal number. Single digits are preced by zeros (264)
+//  %m  the month as a decimal number. Single digits are preceded by a zero (09)
+//  %M  the minute as a decimal number. Single digits are preceded by a zero (32)
+//  %n  a newline (\n)
+//  %p  AM or PM as appropriate
+//  %P  am or pm as appropriate
+//  %r  equivalent to %I:%M:%S %p
+//  %R  equivalent to %H:%M
+//  %S  the second as a number. Single digits are preceded by a zero (05)
+//  %t  a tab (\t)
+//  %T  equivalent to %H:%M:%S
+//  %u  weekday as a decimal number, where Monday is 1
+//  %U  week of the year as a decimal number (Sunday is the first day of the week)
+//  %V  ISO 8601 week of the year
+//  %w  the weekday (Sunday as first day of the week) as a number. (0)
+//  %W  week of the year as a decimal number (Monday is the first day of the week)
+//  %x  equivalent to %m/%d/%Y
+//  %X  equivalent to %H:%M:%S
+//  %y  year without century as a number. Single digits are preceded by zero (14)
+//  %Y  the year with century as a number (2014)
+//  %z  the time zone offset from UTC (-0700)
+//  %Z  time zone name (UTC)
 func Format(t time.Time, layout string) string {
 	const bufSize = 64
 	var b [bufSize]byte
-	var buf = b[:0]
-	buf = AppendFormat(buf, t, layout)
+	buf := AppendFormat(b[:0], t, layout)
 	return string(buf)
 }
 
@@ -212,7 +251,6 @@ func AppendFormat(b []byte, t time.Time, layout string) []byte {
 			}
 			b = appendInt(b, zone/60, 2)
 			b = appendInt(b, zone%60, 2)
-
 		case stdTZ:
 			if name != "" {
 				b = append(b, name...)
@@ -228,99 +266,91 @@ func AppendFormat(b []byte, t time.Time, layout string) []byte {
 // nextStdChunk finds the first occurrence of a std string in
 // layout and returns the text before, the std string, and the text after.
 func nextStdChunk(layout string) (prefix string, std int, suffix string) {
-	specPos := -1
-
 	for i := 0; i < len(layout); i++ {
-		c := int(layout[i])
-		if specPos < 0 {
-			if c == '%' {
-				specPos = i
+		j := i + 1
+		if int(layout[i]) == '%' && len(layout) > j {
+			spec := int(layout[j])
+			switch spec {
+			case 'a': // Mon
+				return layout[0:i], stdWeekDay, layout[j+1:]
+			case 'A': // Monday
+				return layout[0:i], stdLongWeekDay, layout[j+1:]
+			case 'b', 'h': // Jan
+				return layout[0:i], stdMonth, layout[j+1:]
+			case 'B': // January
+				return layout[0:i], stdLongMonth, layout[j+1:]
+			case 'c': // "Mon Jan _2 15:04:05 2006" (assumes "C" locale)
+				return layout[0:i], stdNop, "%a %b %e %H:%M:%S %Y" + layout[j+1:]
+			case 'C': // 20
+				return layout[0:i], stdFirstTwoDigitYear, layout[j+1:]
+			case 'd': // 02
+				return layout[0:i], stdZeroDay, layout[j+1:]
+			case 'D': // %m/%d/%y
+				return layout[0:i], stdNop, "%m/%d/%y" + layout[j+1:]
+			case 'e': // _2
+				return layout[0:i], stdUnderDay, layout[j+1:]
+			case 'f': // fraction seconds in microseconds (Python)
+				std = stdFracSecond0
+				std |= 6 << stdArgShift // microseconds precision
+				return layout[0:i], std, layout[j+1:]
+			case 'F': // %Y-%m-%d
+				return layout[0:i], stdNop, "%Y-%m-%d" + layout[j+1:]
+			case 'g':
+				return layout[0:i], stdISO8601WeekYear, layout[j+1:]
+			case 'G':
+				return layout[0:i], stdISO8601LongWeekYear, layout[j+1:]
+			case 'H':
+				return layout[0:i], stdHour, layout[j+1:]
+			case 'I':
+				return layout[0:i], stdZeroHour12, layout[j+1:]
+			case 'j':
+				return layout[0:i], stdYearDay, layout[j+1:]
+			case 'm':
+				return layout[0:i], stdZeroMonth, layout[j+1:]
+			case 'M':
+				return layout[0:i], stdZeroMinute, layout[j+1:]
+			case 'n':
+				return layout[0:i] + "\n", stdNop, layout[j+1:]
+			case 'p':
+				return layout[0:i], stdPM, layout[j+1:]
+			case 'P':
+				return layout[0:i], stdpm, layout[j+1:]
+			case 'r':
+				return layout[0:i], stdNop, "%I:%M:%S %p" + layout[j+1:]
+			case 'R': // %H:%M"
+				return layout[0:i], stdNop, "%H:%M" + layout[j+1:]
+			case 'S':
+				return layout[0:i], stdZeroSecond, layout[j+1:]
+			case 't':
+				return layout[0:i] + "\t", stdNop, layout[j+1:]
+			case 'T': // %H:%M:%S
+				return layout[0:i], stdNop, "%H:%M:%S" + layout[j+1:]
+			case 'u': // weekday as a decimal number, where Monday is 1
+				return layout[0:i], stdNumWeekDay, layout[j+1:]
+			case 'U': // week of the year as a decimal number (Sunday is the first day of the week)
+				return layout[0:i], stdWeekOfYear, layout[j+1:]
+			case 'V':
+				return layout[0:i], stdISO8601Week, layout[j+1:]
+			case 'w':
+				return layout[0:i], stdZeroBasedNumWeekDay, layout[j+1:]
+			case 'W': // week of the year as a decimal number (Monday is the first day of the week)
+				return layout[0:i], stdMonFirstWeekOfYear, layout[j+1:]
+			case 'x': // locale depended date representation (assumes "C" locale)
+				return layout[0:i], stdNop, "%m/%d/%Y" + layout[j+1:]
+			case 'X': // locale depended time representation (assumes "C" locale)
+				return layout[0:i], stdNop, "%H:%M:%S" + layout[j+1:]
+			case 'y':
+				return layout[0:i], stdYear, layout[j+1:]
+			case 'Y':
+				return layout[0:i], stdLongYear, layout[j+1:]
+			case 'z':
+				return layout[0:i], stdNumTZ, layout[j+1:]
+			case 'Z':
+				return layout[0:i], stdTZ, layout[j+1:]
+			case '%':
+				return layout[0:i] + "%", stdNop, layout[j+1:]
 			}
-			continue
 		}
-
-		switch c {
-		case 'a': // Mon
-			return layout[0:specPos], stdWeekDay, layout[i+1:]
-		case 'A': // Monday
-			return layout[0:specPos], stdLongWeekDay, layout[i+1:]
-		case 'b', 'h': // Jan
-			return layout[0:specPos], stdMonth, layout[i+1:]
-		case 'B': // January
-			return layout[0:specPos], stdLongMonth, layout[i+1:]
-		case 'c': // "Mon Jan _2 15:04:05 2006" (assumes "C" locale)
-			return layout[0:specPos], stdNop, "%a %b %e %H:%M:%S %Y" + layout[i+1:]
-		case 'C': // 20
-			return layout[0:specPos], stdFirstTwoDigitYear, layout[i+1:]
-		case 'd': // 02
-			return layout[0:specPos], stdZeroDay, layout[i+1:]
-		case 'D': // %m/%d/%y
-			return layout[0:specPos], stdNop, "%m/%d/%y" + layout[i+1:]
-		case 'e': // _2
-			return layout[0:specPos], stdUnderDay, layout[i+1:]
-		case 'f': // fraction seconds in microseconds (Python)
-			std = stdFracSecond0
-			std |= 6 << stdArgShift // microseconds precision
-			return layout[0:specPos], std, layout[i+1:]
-		case 'F': // %Y-%m-%d
-			return layout[0:specPos], stdNop, "%Y-%m-%d" + layout[i+1:]
-		case 'g':
-			return layout[0:specPos], stdISO8601WeekYear, layout[i+1:]
-		case 'G':
-			return layout[0:specPos], stdISO8601LongWeekYear, layout[i+1:]
-		case 'H':
-			return layout[0:specPos], stdHour, layout[i+1:]
-		case 'I':
-			return layout[0:specPos], stdZeroHour12, layout[i+1:]
-		case 'j':
-			return layout[0:specPos], stdYearDay, layout[i+1:]
-		case 'm':
-			return layout[0:specPos], stdZeroMonth, layout[i+1:]
-		case 'M':
-			return layout[0:specPos], stdZeroMinute, layout[i+1:]
-		case 'n':
-			return layout[0:specPos] + "\n", stdNop, layout[i+1:]
-		case 'p':
-			return layout[0:specPos], stdPM, layout[i+1:]
-		case 'P':
-			return layout[0:specPos], stdpm, layout[i+1:]
-		case 'r':
-			return layout[0:specPos], stdNop, "%I:%M:%S %p" + layout[i+1:]
-		case 'R': // %H:%M"
-			return layout[0:specPos], stdNop, "%H:%M" + layout[i+1:]
-		case 'S':
-			return layout[0:specPos], stdZeroSecond, layout[i+1:]
-		case 't':
-			return layout[0:specPos] + "\t", stdNop, layout[i+1:]
-		case 'T': // %H:%M:%S
-			return layout[0:specPos], stdNop, "%H:%M:%S" + layout[i+1:]
-		case 'u': // weekday as a decimal number, where Monday is 1
-			return layout[0:specPos], stdNumWeekDay, layout[i+1:]
-		case 'U': // week of the year as a decimal number (Sunday is the first day of the week)
-			return layout[0:specPos], stdWeekOfYear, layout[i+1:]
-		case 'V':
-			return layout[0:specPos], stdISO8601Week, layout[i+1:]
-		case 'w':
-			return layout[0:specPos], stdZeroBasedNumWeekDay, layout[i+1:]
-		case 'W': // week of the year as a decimal number (Monday is the first day of the week)
-			return layout[0:specPos], stdMonFirstWeekOfYear, layout[i+1:]
-		case 'x': // locale depended date representation (assumes "C" locale)
-			return layout[0:specPos], stdNop, "%m/%d/%Y" + layout[i+1:]
-		case 'X': // locale depended time representation (assumes "C" locale)
-			return layout[0:specPos], stdNop, "%H:%M:%S" + layout[i+1:]
-		case 'y':
-			return layout[0:specPos], stdYear, layout[i+1:]
-		case 'Y':
-			return layout[0:specPos], stdLongYear, layout[i+1:]
-		case 'z':
-			return layout[0:specPos], stdNumTZ, layout[i+1:]
-		case 'Z':
-			return layout[0:specPos], stdTZ, layout[i+1:]
-		case '%':
-			return layout[0:specPos] + "%", stdNop, layout[i+1:]
-		}
-
-		specPos = -1
 	}
 
 	return layout, 0, ""
