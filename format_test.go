@@ -99,12 +99,14 @@ var (
 )
 
 func TestFormat(t *testing.T) {
-
 	for i := range tc {
-		c := tc[i]
-		actual := strftime.Format(c.time, c.layout)
-		if actual != c.expected {
-			t.Errorf("Test layout `%s`: expected: %q; actual: %q", c.layout, c.expected, actual)
-		}
+		tt := tc[i]
+		t.Run(tt.layout, func(t *testing.T) {
+			t.Parallel()
+			actual := strftime.Format(tt.time, tt.layout)
+			if actual != tt.expected {
+				t.Errorf("Test layout `%s`: expected: %q; actual: %q", tt.layout, tt.expected, actual)
+			}
+		})
 	}
 }
