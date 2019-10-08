@@ -29,6 +29,13 @@ func BenchmarkImperfectGo(b *testing.B) {
 	}
 }
 
+func BenchmarkImperfectGoNoAlloc(b *testing.B) {
+	var buf [128]byte
+	for i := 0; i < b.N; i++ {
+		imperfectgo.AppendFormat(buf[:0], now, benchfmt)
+	}
+}
+
 func BenchmarkTebeka(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		tebeka.Format(benchfmt, now)
