@@ -23,5 +23,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
+      - name: Install dependencies
+        run: go get github.com/go-playground/overalls
+
       - name: Go test
-        run: go test -race ./...
+        run: overalls -covermode=atomic -outfile=coverage.txt -- -race
+
+      - uses: codecov/codecov-action@v1
